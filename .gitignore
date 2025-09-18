@@ -1,40 +1,9 @@
-# Nextflow runtime and temp dirs
-work/
-.nextflow*
-*.nextflow.log
+# Ignore everything by default
+*
 
-# Pipeline outputs
-results/
-*.log
-*.out
-*.err
-
-# Reference data and indexes
-refs/
-*.fa
-*.fai
-*.dict
-*.gtf
-*.gff
-*.vcf
-*.vcf.gz
-*.tbi
-
-# Containers / images
-containers/
-*.sif
-*.img
-
-# Common sequencing data
-*.fastq
-*.fastq.gz
-*.bam
-*.bai
-*.cram
-*.crai
-
-# Misc
-*.pdf
-*.png
-*.jpg
-.DS_Store
+# But keep these
+!.gitignore
+!main.nf
+!nextflow.config
+!full_params.yaml
+!modules/
