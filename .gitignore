@@ -1,19 +1,40 @@
+# Nextflow runtime and temp dirs
 work/
+.nextflow*
+*.nextflow.log
+
+# Pipeline outputs
 results/
+*.log
+*.out
+*.err
+
+# Reference data and indexes
+refs/
+*.fa
+*.fai
+*.dict
+*.gtf
+*.gff
+*.vcf
+*.vcf.gz
+*.tbi
+
+# Containers / images
+containers/
+*.sif
+*.img
+
+# Common sequencing data
+*.fastq
+*.fastq.gz
 *.bam
 *.bai
 *.cram
 *.crai
-*.fastq
-*.fastq.gz
-*.vcf.gz
-*.tbi
-*.vcf
+
+# Misc
 *.pdf
 *.png
 *.jpg
-*.sif
-*.img
-.nextflow*
-*.log
 .DS_Store
