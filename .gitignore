@@ -1,9 +1,10 @@
-# Ignore everything by default
+# Ignore everything
 *
 
-# But keep these
+# Allow these
 !.gitignore
 !main.nf
 !nextflow.config
 !full_params.yaml
-!modules/
+!modules
+!modules/**
