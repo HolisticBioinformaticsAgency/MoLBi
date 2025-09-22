@@ -1,10 +1,12 @@
-# Inputs
+# Inputs (now runs on samplesheet)
+samplesheet: "./refs/samplesheet.csv"
+
 reads: "../data/molbi/M24007/*_{1,2}.fastq.gz"
 reference: "./refs/hg38.fa"
 bed: "./refs/S33266436_Padded.hg38matched.bed"
 
 # Outputs
-outdir: "result_full"
+outdir: "result_samplesheet"
 
 # Calling / annotation
 vardict_mode: "paired"

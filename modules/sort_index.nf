@@ -1,13 +1,15 @@
 process SORT_INDEX {
-  tag "${sample_id}"
-  container = 'quay.io/biocontainers/samtools:1.18--h50ea8bc_1'
-  publishDir "${params.outdir}/bam", mode: 'copy'
+  tag "${subject}_${sample_id}"
+  container 'quay.io/biocontainers/samtools:1.18--h50ea8bc_1'
+
+  // publish per subject
+  publishDir { "${params.outdir_abs}/${subject}/bam" }, mode: 'copy'
 
   input:
-  tuple val(sample_id), path(sam)
+  tuple val(subject), val(sample_id), path(sam)
 
   output:
-  tuple val(sample_id), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), emit: bam
+  tuple val(subject), val(sample_id), path("${sample_id}.bam"), path("${sample_id}.bam.bai"), emit: bam
 
   script:
   """
@@ -15,4 +17,3 @@ process SORT_INDEX {
   samtools index -@ ${task.cpus} ${sample_id}.bam
   """
 }
-

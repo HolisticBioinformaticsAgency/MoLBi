@@ -1,10 +1,12 @@
 process FASTQC {
-  tag "${sample_id}"
-  container = 'quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0'
-  publishDir "${params.outdir}/fastqc", mode: 'copy'
+  tag "${subject}_${sample_id}"
+  container 'quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0'
+
+  // publish per subject (use outdir_abs if your main.nf defines it; else fallback to outdir)
+  publishDir { "${params.outdir_abs ?: params.outdir}/${subject}/fastqc" }, mode: 'copy'
 
   input:
-  tuple val(sample_id), path(reads)
+  tuple val(subject), val(sample_id), path(reads)   // reads = [R1,R2] (paired)
 
   output:
   path "*_fastqc.html", emit: html
@@ -12,7 +14,6 @@ process FASTQC {
 
   script:
   """
-  fastqc -q -o ./ ${reads.join(" ")}
+  fastqc -q -o ./ ${reads.join(' ')}
   """
 }
-

@@ -1,83 +1,105 @@
 nextflow.enable.dsl=2
 
-// ---------- Params  ----------
-if( !params.containsKey('reads')        ) params.reads        = "data/*_{1,2}.fastq.gz"
-if( !params.containsKey('reference')    ) params.reference    = null
-if( !params.containsKey('bed')          ) params.bed          = null
-if( !params.containsKey('outdir')       ) params.outdir       = "results"
-if( !params.containsKey('min_af')       ) params.min_af       = 0.05
-if( !params.containsKey('vardict_mode') ) params.vardict_mode = 'single'  // 'single' | 'paired'
+// -------------------- Params --------------------
+if( !params.containsKey('samplesheet') ) params.samplesheet = "./refs/samplesheet.csv"
+if( !params.containsKey('reference')    ) params.reference  = null
+if( !params.containsKey('bed')          ) params.bed        = null
+if( !params.containsKey('outdir')       ) params.outdir     = "results"
+if( !params.containsKey('min_af')       ) params.min_af     = 0.05
+if( !params.containsKey('vardict_mode') ) params.vardict_mode = 'paired'  // 'paired' | 'single'
 
-// SnpEff
-if( !params.containsKey('snpeff_genome') ) params.snpeff_genome = "GRCh38.99"
-if( !params.containsKey('snpeff_data')   ) params.snpeff_data   = ""
+// Optional tool params (silence warnings; processes may still use their own defaults)
+if( !params.containsKey('polysolver_race') )       params.polysolver_race       = 'Caucasian'
+if( !params.containsKey('polysolver_build') )      params.polysolver_build      = 'hg38'
+if( !params.containsKey('polysolver_emit_vcf') )   params.polysolver_emit_vcf   = 0
+if( !params.containsKey('polysolver_fastqtype') )  params.polysolver_fastqtype  = 'STDFQ'
+if( !params.containsKey('polysolver_insertcalc') ) params.polysolver_insertcalc = 0
 
-// VEP
-if( !params.containsKey('vep_cache_dir') ) params.vep_cache_dir = ""
-if( !params.containsKey('vep_assembly')  ) params.vep_assembly  = "GRCh38"
-if( !params.containsKey('vep_species')   ) params.vep_species   = "homo_sapiens"
-
-// pyTMB annotation choice
-if( !params.containsKey('pytmb_annot') ) params.pytmb_annot = "vep"  // "vep" or "snpeff"
-
-// Defaults
-if( !params.containsKey('multiqc_extra_args') ) params.multiqc_extra_args = ''
-
-// Compute an absolute outdir once, reuse everywhere
-params.outdir_abs = params.outdir.startsWith('/') \
+// Absolute outdir (stable for publishDir closures)
+params.outdir_abs = params.outdir?.startsWith('/') \
   ? params.outdir \
   : "${projectDir}/${params.outdir}"
 
-// ---------- Sanity ----------
+// Hard exits for required inputs
 if( !params.reference ) exit 1, "ERROR: --reference FASTA is required"
 if( !params.bed )       exit 1, "ERROR: --bed regions BED is required"
 
-// ---------- Includes ----------
-include { FASTQC            } from './modules/fastqc.nf'
-include { BWA_INDEX         } from './modules/bwa_index.nf'
-include { REF_FAIDX         } from './modules/ref_faidx.nf'
-include { ALIGN_SAM         } from './modules/align_sam.nf'
-include { SORT_INDEX        } from './modules/sort_index.nf'
-include { ADD_OR_REPLACE_READ_GROUPS } from './modules/add_or_replace_read_groups.nf'
-include { DEDUP_MARKDUPS    } from './modules/dedup_markdups.nf'
+// -------------------- Includes --------------------
+include { FASTQC }                         from './modules/fastqc.nf'
+include { BWA_INDEX }                      from './modules/bwa_index.nf'
+include { REF_FAIDX }                      from './modules/ref_faidx.nf'
+include { ALIGN_SAM }                      from './modules/align_sam.nf'
+include { SORT_INDEX }                     from './modules/sort_index.nf'
+include { ADD_OR_REPLACE_READ_GROUPS }     from './modules/add_or_replace_read_groups.nf'
+include { DEDUP_MARKDUPS }                 from './modules/dedup_markdups.nf'
+include { HSMETRICS }                      from './modules/hsmetrics.nf'
+include { POLYSOLVER }                     from './modules/polysolver.nf'
 
-include { HSMETRICS } from './modules/hsmetrics.nf'
+include { VARDICT_SINGLE_RAW }             from './modules/vardict_single_raw.nf'
+include { VARDICT_PAIRED_RAW }             from './modules/vardict_paired_raw.nf'
+include { VARDICT_TO_VCF }                 from './modules/vardict_to_vcf.nf'
 
-include { POLYSOLVER } from './modules/polysolver.nf'
+include { CNVKIT_REF }                     from './modules/cnvkit_ref.nf'
+include { CNVKIT_AMPLICON }                from './modules/cnvkit_amplicon.nf'
+include { CNVKIT_GENES }                   from './modules/cnvkit_genes.nf'
 
-include { VARDICT_SINGLE_RAW } from './modules/vardict_single_raw.nf'
-include { VARDICT_PAIRED_RAW } from './modules/vardict_paired_raw.nf'
-include { VARDICT_TO_VCF     } from './modules/vardict_to_vcf.nf'
+include { MSIPRO_SCAN }                    from './modules/msipro_scan.nf'
+include { MSIPRO_MSI }                     from './modules/msipro_msi.nf'
 
-include { CNVKIT_REF       } from './modules/cnvkit_ref.nf'
-include { CNVKIT_AMPLICON  } from './modules/cnvkit_amplicon.nf'
-include { CNVKIT_GENES     } from './modules/cnvkit_genes.nf'
+include { VEP_ANNOTATE }                   from './modules/vep_annotate.nf'
+include { SNPEFF_ANNOTATE }                from './modules/snpeff_annotate.nf'
+include { CLINVAR_ANNOTATE }               from './modules/clinvar_annotate.nf'
 
-include { MSIPRO_SCAN      } from './modules/msipro_scan.nf'
-include { MSIPRO_MSI       } from './modules/msipro_msi.nf'   
+include { SOMATIC_FILTER }                 from './modules/somatic_filter.nf'
+include { PYTMB }                          from './modules/pytmb.nf'
+include { MULTIQC }                        from './modules/multiqc.nf'
 
-include { VEP_ANNOTATE     } from './modules/vep_annotate.nf'
-include { SNPEFF_ANNOTATE  } from './modules/snpeff_annotate.nf'
-include { CLINVAR_ANNOTATE } from './modules/clinvar_annotate.nf'
+// -------------------- Samplesheet → Channels --------------------
+def REQUIRED = ['sample','subject','status','fastq_1','fastq_2']
 
-include { SOMATIC_FILTER } from './modules/somatic_filter.nf'
+Channel
+  .fromPath(params.samplesheet)
+  .splitCsv(header:true)
+  .map { row ->
+    // validate required columns exist & non-empty
+    def missing = REQUIRED.findAll { k ->
+      !row.containsKey(k) || row[k] == null || row[k].toString().trim() == ''
+    }
+    if( missing ) {
+      throw new IllegalArgumentException("Samplesheet row has missing/empty field(s): ${missing} → ${row}")
+    }
+    tuple(
+      row.sample as String,
+      row.subject as String,
+      (row.status as String).toLowerCase(),   // 'tumor' | 'normal'
+      file(row.fastq_1),
+      file(row.fastq_2),
+      ((row.sex ?: 'NA') as String)
+    )
+  }
+  .set { ch_sheet }  // (sample, subject, status, R1, R2, sex)
 
-include { PYTMB } from './modules/pytmb.nf'
+// Reads for FASTQC/ALIGN: (subject, sample, [R1,R2])
+ch_reads = ch_sheet.map { sample, subject, status, r1, r2, sex ->
+  tuple(subject, sample, [ r1, r2 ])
+}
 
-include { MULTIQC } from './modules/multiqc.nf'
+// Sample metadata for joins: (sample, subject, status, sex)
+ch_meta  = ch_sheet.map { sample, subject, status, r1, r2, sex ->
+  tuple(sample, subject, status, sex)
+}
 
-// ---------- Channels ----------
-Channel.fromFilePairs(params.reads).set { ch_reads }
+// Reference & BED as singletons
 Channel.of( file(params.reference) ).set { ch_ref_fa }
 Channel.of( file(params.bed)       ).set { ch_bed }
 
-// ---------- Workflow ----------
+// -------------------- Workflow --------------------
 workflow {
 
-  // QC
+  // ---------- QC ----------
   FASTQC( ch_reads )
 
-  // Build index & faidx
+  // ---------- Reference index / faidx ----------
   BWA_INDEX( ch_ref_fa )
   ch_idxdir  = BWA_INDEX.out.idxdir
   ch_ref_pas = BWA_INDEX.out.fasta
@@ -86,131 +108,167 @@ workflow {
   ch_ref_fai = REF_FAIDX.out.fai
   ch_ref_fa2 = REF_FAIDX.out.fasta
 
-  // Align
+  // ---------- Align ----------
   ch_align_in = ch_reads.combine(ch_idxdir).combine(ch_ref_pas)
   ch_sam = ALIGN_SAM( ch_align_in )
+  // (subject, sample, sample.sam)
 
-  // Sort & index (existing)
+  // ---------- Sort & index ----------
   ch_bam_sorted = SORT_INDEX( ch_sam )
+  // (subject, sample, sample.bam, sample.bam.bai)
 
-  // Ensure read groups exist
+  // ---------- Read groups ----------
   ch_bam_rg = ADD_OR_REPLACE_READ_GROUPS( ch_bam_sorted )
+  // (subject, sample, sample.rg.bam, sample.rg.bam.bai)
 
-  // Remove duplicates on RG-fixed BAMs
+  // ---------- Dedup ----------
   (ch_bam, ch_dedup_metrics) = DEDUP_MARKDUPS( ch_bam_rg )
+  // ch_bam: (subject, sample, sample.dedup.bam, sample.dedup.bam.bai)
 
-  // HsMetrics 
-  HSMETRICS( ch_bam, ch_bed, ch_ref_fa2, ch_ref_fai )
-
-  // HLA typing
-  POLYSOLVER( ch_bam )
-
-  // Tumour–Normal pairing (expects IDs ending with N/T)
-  def ch_pairs = ch_bam
-    .map { id, bam, bai ->
-      def m = (id =~ /(.+?)([NT])$/)
-      if( !m ) throw new IllegalArgumentException("Sample id '${id}' must end with 'N' or 'T'")
-      tuple(m[0][1], tuple(m[0][2], bam, bai))  // (base, (type, bam, bai))
+  // ---------- Attach metadata (subject/status/sex) ----------
+  // key by sample, join, then re-key by subject
+  ch_bam_meta = ch_bam
+    .map  { sub, sample, bam, bai -> tuple(sample, tuple(sub, bam, bai)) }
+    .join ( ch_meta )  // by sample
+    .map  { sample, left, subject, status, sex ->
+      tuple(subject, sample, status, sex, left[1], left[2])
     }
+  // -> (subject, sample, status, sex, bam, bai)
+
+  // ---------- HsMetrics (needs .fai) ----------
+  HSMETRICS(
+    ch_bam_meta.map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) },
+    ch_bed,
+    ch_ref_fa2,
+    ch_ref_fai
+  )
+
+  // ---------- HLA typing ----------
+  POLYSOLVER(
+    ch_bam_meta.map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) }
+  )
+
+  // ---------- Pair tumour/normal by subject ----------
+  def ch_pairs = ch_bam_meta
+    .map { sub, sample, status, sex, bam, bai -> tuple(sub, tuple(status, sample, bam, bai)) }
     .groupTuple()
-    .map { base, recs ->
-      def t = recs.find { it[0] == 'T' }
-      def n = recs.find { it[0] == 'N' }
-      if( !t || !n ) { log.warn "Skipping case ${base}: missing ${t ? 'N' : 'T'} mate"; return null }
-      tuple(base, t[1], t[2], n[1], n[2])
+    .map { sub, recs ->
+      def t = recs.find { it[0] == 'tumor' }
+      def n = recs.find { it[0] == 'normal' }
+      if( !t || !n ) { log.warn "Skipping ${sub}: missing ${t ? 'normal' : 'tumor'}"; return null }
+      tuple(sub, t[1], t[2], t[3], n[1], n[2], n[3])
     }
     .filter { it != null }
+  // -> (subject, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai)
 
-  // VarDict inputs
-  def ch_vardict_in_single = ch_bam.combine(ch_ref_fa2).combine(ch_ref_fai).combine(ch_bed)
-  def ch_vardict_in_paired = ch_pairs.combine(ch_ref_fa2).combine(ch_ref_fai).combine(ch_bed)
+  // Mapping (sample → subject) for robust VarDict single outputs
+  def ch_sample2subject = ch_bam_meta.map { sub, sample, status, sex, bam, bai -> tuple(sample, sub) }
 
-  def ch_variants_vcf
+  // ---------- VarDict inputs ----------
+  // SINGLE: (subject, sample, bam, bai, ref_fa, ref_fai, bed)
+  def ch_vardict_in_single = ch_bam_meta
+    .combine(ch_ref_fa2)
+    .combine(ch_ref_fai)
+    .combine(ch_bed)
+    .map { sub, sample, status, sex, bam, bai, ref_fa, ref_fai, bed ->
+      tuple(sub, sample, bam, bai, ref_fa, ref_fai, bed)
+    }
+
+  // PAIRED: (subject, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, ref_fa, ref_fai, bed)
+  def ch_vardict_in_paired = ch_pairs
+    .combine(ch_ref_fa2)
+    .combine(ch_ref_fai)
+    .combine(ch_bed)
+    .map { sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, ref_fa, ref_fai, bed ->
+      tuple(sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, ref_fa, ref_fai, bed)
+    }
+
+  // ---------- Run VarDict & normalize for TO_VCF ----------
+  def ch_vcf_in
+
   if( params.vardict_mode == 'paired' ) {
     log.info "VarDict mode: paired (tumour–normal)"
-    def ch_tsv = VARDICT_PAIRED_RAW( ch_vardict_in_paired ).map{ id, tsv -> tuple(id, 'paired', tsv) }
-    ch_variants_vcf = VARDICT_TO_VCF( ch_tsv )
-  } else {
+    def ch_tsv_paired = VARDICT_PAIRED_RAW( ch_vardict_in_paired )
+      .map { sampleId, tsv ->
+        // Normalize to 7-tuple for VARDICT_TO_VCF
+        // (subject, mode, t_sample, n_sample, sample_id, tsv, id)
+        tuple(sampleId, 'paired', null, null, null, tsv, sampleId)
+      }
+    ch_vcf_in = ch_tsv_paired
+  }
+  else {
     log.info "VarDict mode: single-sample"
-    def ch_tsv = VARDICT_SINGLE_RAW( ch_vardict_in_single ).map{ id, tsv -> tuple(id, 'single', tsv) }
-    ch_variants_vcf = VARDICT_TO_VCF( ch_tsv )
+    def ch_tsv_single = VARDICT_SINGLE_RAW( ch_vardict_in_single )
+      .map { sampleId, tsv ->
+        // (subject, mode, t_sample, n_sample, sample_id, tsv, id)
+        tuple(sampleId, 'single', null, null, sampleId, tsv, sampleId)
+      }
+    ch_vcf_in = ch_tsv_single
   }
 
-  // CNVkit reference
+  // VarDict TSV → VCF (per subject publish inside the module)
+  def ch_variants_vcf = VARDICT_TO_VCF( ch_vcf_in )
+
+  // ---------- CNVkit ----------
   (ch_cnvref_cnn, ch_cnvref_fa) = CNVKIT_REF( ch_ref_fa2, ch_bed )
 
-  // CNVkit per sample
-  ch_cnvkit_in = ch_bam.combine(ch_cnvref_fa).combine(ch_cnvref_cnn)
-  ch_cnvkit = CNVKIT_AMPLICON( ch_cnvkit_in )
+  def ch_cnvkit_in = ch_bam_meta
+    .combine(ch_cnvref_fa)
+    .combine(ch_cnvref_cnn)
+    .map { sub, sample, status, sex, bam, bai, ref_fa, cnn ->
+      tuple(sub, sample, bam, bai, ref_fa, cnn)
+    }
 
-  // CNV per-gene
-  CNVKIT_GENES( ch_cnvkit.map{ id, cnr, cns, vcf -> tuple(id, cnr, cns) } )
+  def ch_cnvkit = CNVKIT_AMPLICON( ch_cnvkit_in )
+  CNVKIT_GENES( ch_cnvkit.map { sub, sample, cnr, cns, vcf -> tuple(sub, sample, cnr, cns) } )
 
-  // MSI
+  // ---------- MSI ----------
   (ch_msisites, ch_msiref_fa) = MSIPRO_SCAN( ch_ref_fa2 )
-  def ch_msipro_in = ch_pairs.combine(ch_msisites).combine(ch_ref_fa2)
+  def ch_msipro_in = ch_pairs
+    .combine( ch_msisites )
+    .combine( ch_msiref_fa )
+    .map { sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, sites_tsv, ref_fa ->
+      tuple(sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, sites_tsv, ref_fa)
+    }
   MSIPRO_MSI( ch_msipro_in )
 
-  // --- Annotation ---
-
-  // ch_variants_vcf emits: tuple(id, vcf)
-
-  // Build (id, vcf, ref_fa) using the param FASTA as a staged file
-  def ch_vep_in = ch_variants_vcf.map { sid, vcf ->
-    tuple(sid, vcf, file(params.reference))
+  // ---------- Annotation ----------
+  def ch_vep_in = ch_variants_vcf.map { sub, sid, vcf ->
+    tuple(sub, sid, vcf, file(params.reference))
   }
+  def ch_vep = VEP_ANNOTATE( ch_vep_in )
 
-  // Call the process with the CHANNEL
-  def ch_vep    = VEP_ANNOTATE( ch_vep_in )
-  
-  // Build the single input tuple for SnpEff: (id, vcf, mane_dir, clinvar_vcf)
-  def ch_snpeff_in = ch_variants_vcf.map { sid, vcf ->
-    tuple(
-      sid,
-      vcf,
-      file("${params.refs_dir}/GRCh38.mane.1.2.refseq"),
-      file("${params.refs_dir}/clinvar_20250601.vcf.gz")
-    )
-  }
-
-  // singletons for MANE dir and ClinVar file (next to main.nf under ./refs)
   def ch_mane_dir    = Channel.of( file("${params.refs_dir}/GRCh38.mane.1.2.refseq") )
   def ch_clinvar_vcf = Channel.of( file("${params.refs_dir}/clinvar_20250601.vcf.gz") )
 
-  // 1) SnpEff (MANE) → emits (id, *.snpeff.core.vcf)
-  def ch_snpeff_core_in = ch_variants_vcf
-    .combine(ch_mane_dir)                      // (id, vcf) + mane
-  def ch_snpeff_core = SNPEFF_ANNOTATE( ch_snpeff_core_in )
+  def ch_snpeff_core = SNPEFF_ANNOTATE(
+    ch_variants_vcf.combine(ch_mane_dir)
+                   .map { sub, sid, vcf, mane -> tuple(sub, sid, vcf, mane) }
+  )
+  def ch_snpeff = CLINVAR_ANNOTATE(
+    ch_snpeff_core.combine(ch_clinvar_vcf)
+                  .map { sub, sid, core_vcf, clin -> tuple(sub, sid, core_vcf, clin) }
+  )
 
-  // 2) ClinVar with SnpSift → emits (id, *.snpeff.vcf)
-  def ch_clinvar_in = ch_snpeff_core
-    .combine(ch_clinvar_vcf)                   // (id, core.vcf) + clinvar
-  def ch_snpeff = CLINVAR_ANNOTATE( ch_clinvar_in )
-
-  // --- Pick one annotated stream based on params.pytmb_annot ---
   def ch_annot =
     (params.pytmb_annot == 'snpeff') ? ch_snpeff :
     (params.pytmb_annot == 'vep')    ? ch_vep    :
-                                       ch_vep    // default
+                                       ch_vep
 
-  // --- Somatic-only filter (run once on the chosen annotation) ---
-  def ch_somatic = SOMATIC_FILTER( ch_annot )         // emits: tuple(id, somatic.vcf)
+  def ch_somatic = SOMATIC_FILTER( ch_annot )
 
-  // --- TMB on the filtered VCFs ---
-  PYTMB(
-    ch_somatic,
-    file(params.pytmb_db_config),
-    file(params.pytmb_var_config)
-  )
+// -----------TMB-----------------
+// TMB (per subject/sample)
+ PYTMB(
+  ch_somatic.map { sub, sid, vcf ->
+    tuple(sub, sid, file(vcf))   // [subject, sample_id, vcf]
+  },
+  file(params.pytmb_db_config),
+  file(params.pytmb_var_config)
+)
 
-      // ---- MultiQC barrier & run ----
-  // HsMetrics files (flatten tuple to path)
-  ch_hsmetrics_files = HSMETRICS.out.hs.map { sid, hsfile -> hsfile }
-
-  // Merge with MarkDuplicates metrics
-  ch_multiqc_inputs = ch_dedup_metrics.mix(ch_hsmetrics_files).collect()
-
-  // MULTIQC
+  // ---------- MultiQC ----------
+  def ch_hsmetrics_files = HSMETRICS.out.hs.map { sub, sid, hs -> hs }
+  def ch_multiqc_inputs  = ch_dedup_metrics.mix(ch_hsmetrics_files).collect()
   MULTIQC( ch_multiqc_inputs )
-
 }

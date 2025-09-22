@@ -1,7 +1,7 @@
 process MULTIQC {
   tag 'multiqc'
   container 'quay.io/biocontainers/multiqc:1.31--pyhdfd78af_0'
-  publishDir "${params.outdir_abs}/multiqc", mode: 'copy', overwrite: true
+  publishDir { "${params.outdir_abs}/multiqc" }, mode: 'copy', overwrite: true
   stageInMode 'symlink'
 
   input:
@@ -21,7 +21,6 @@ process MULTIQC {
     multiqc ${params.multiqc_extra_args ?: ''} -o . .
   } 2>&1 | tee multiqc.log
 
-  # sanity
   test -s multiqc_report.html
   test -s multiqc.log
   """

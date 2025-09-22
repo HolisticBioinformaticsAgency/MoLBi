@@ -1,7 +1,9 @@
 process BWA_INDEX {
   tag { ref_fa.baseName }
-  container = 'quay.io/biocontainers/bwa:0.7.17--he4a0461_11'
-  publishDir "${params.outdir}/ref_index", mode: 'copy'
+  container 'quay.io/biocontainers/bwa:0.7.17--he4a0461_11'
+
+  // publish once globally, not per subject
+  publishDir { "${params.outdir_abs}/reference/bwa_index" }, mode: 'copy'
 
   input:
   path ref_fa
@@ -17,4 +19,3 @@ process BWA_INDEX {
   bwa index -p ref_index/genome ref.fa
   """
 }
-

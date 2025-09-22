@@ -1,14 +1,17 @@
 process VEP_ANNOTATE {
-  tag "${sample_id}"
-  container = 'quay.io/biocontainers/ensembl-vep:115--pl5321h2a3209d_0'
-  publishDir "${params.outdir}/vep", mode: 'copy'
+  tag "${subject}:${id}"
+  container 'quay.io/biocontainers/ensembl-vep:115--pl5321h2a3209d_0'
+
+  // per-subject outputs
+  publishDir { "${params.outdir_abs}/${subject}/vep" }, mode: 'copy'
 
   input:
-  tuple val(sample_id), path(vcf), path(ref_fa)
+  // from wiring: (subject, id, vcf, ref_fa)
+  tuple val(subject), val(id), path(vcf), path(ref_fa)
 
   output:
-  tuple val(sample_id), path("${sample_id}.vep.vcf"), emit: vepvcf
-  path "${sample_id}.vep.stats.txt",                  emit: stats
+  tuple val(subject), val(id), path("${id}_vep.vcf"),       emit: vepvcf
+  tuple val(subject), val(id), path("${id}_vep_stats.txt"), emit: stats
 
   script:
   """
@@ -26,7 +29,7 @@ process VEP_ANNOTATE {
     --af --af_gnomad --max_af --variant_class \
     --pick \
     --input_file ${vcf} \
-    --output_file ${sample_id}.vep.vcf \
-    --stats_text --stats_file ${sample_id}.vep.stats.txt
+    --output_file ${id}_vep.vcf \
+    --stats_text --stats_file ${id}_vep_stats.txt
   """
 }

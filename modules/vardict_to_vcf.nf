@@ -1,16 +1,23 @@
 process VARDICT_TO_VCF {
-  tag "${id}"
+  tag "${subject}:${id} (${mode})"
   container 'quay.io/biocontainers/vardict-java:1.8.3--hdfd78af_0'
-  publishDir "${params.outdir}/variants", mode: 'copy'
+
+  publishDir { "${params.outdir_abs}/${subject}/variants" }, mode: 'copy'
 
   input:
-  // id = case/sample id; mode = 'single' or 'paired'
-  tuple val(id), val(mode), path(tsv)
+  // (subject, mode, t_sample, n_sample, sample_id, tsv, id)
+  tuple val(subject), val(mode), val(t_sample), val(n_sample), val(sample_id), path(tsv), val(id)
 
   output:
-  tuple val(id), path("${id}.vcf"), emit: vcf
+  tuple val(subject), val(id), path("${id}.vcf"), emit: vcf
+
+  when:
+  mode in ['single','paired']
 
   script:
+  // Defensive -N (avoid "null|null")
+  def tn = (t_sample && n_sample) ? "${t_sample}|${n_sample}" : "${subject}_T|${subject}_N"
+
   """
   set -euo pipefail
   echo "[VarDict TO_VCF] Mode: ${mode}" >&2
@@ -18,12 +25,12 @@ process VARDICT_TO_VCF {
   if [ "${mode}" = "paired" ]; then
     cat ${tsv} \
       | testsomatic.R \
-      | var2vcf_paired.pl -N "${id}|${id}_NORMAL" -f ${params.min_af} \
+      | var2vcf_paired.pl -N "${tn}" -f ${params.min_af} \
       > ${id}.vcf
   else
     cat ${tsv} \
       | teststrandbias.R \
-      | var2vcf_valid.pl -N ${id} -E -f ${params.min_af} \
+      | var2vcf_valid.pl -N ${sample_id} -E -f ${params.min_af} \
       > ${id}.vcf
   fi
   """
