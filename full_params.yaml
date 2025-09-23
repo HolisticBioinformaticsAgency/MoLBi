@@ -1,12 +1,21 @@
-# Inputs (now runs on samplesheet)
+# Inputs (samplesheet-driven)
 samplesheet: "./refs/samplesheet.csv"
 
-reads: "../data/molbi/M24007/*_{1,2}.fastq.gz"
-reference: "./refs/hg38.fa"
+# Core references (must ALREADY exist in ./refs/)
+reference: "./refs/Homo_sapiens_assembly38.fasta"        # FASTA
+reference_fai: "./refs/Homo_sapiens_assembly38.fasta.fai" # FASTA index (.fai) — must match the FASTA
+
+# NOTE: BWA index files are expected in the same folder with the SAME basename:
+#   ./refs/Homo_sapiens_assembly38.fasta.amb
+#   ./refs/Homo_sapiens_assembly38.fasta.ann
+#   ./refs/Homo_sapiens_assembly38.fasta.bwt
+#   ./refs/Homo_sapiens_assembly38.fasta.pac
+#   ./refs/Homo_sapiens_assembly38.fasta.sa
+
 bed: "./refs/S33266436_Padded.hg38matched.bed"
 
 # Outputs
-outdir: "result_samplesheet"
+outdir: "result"
 
 # Calling / annotation
 vardict_mode: "paired"
