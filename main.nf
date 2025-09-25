@@ -33,7 +33,10 @@ include { SORT_INDEX }                     from './modules/sort_index.nf'
 include { DEDUP_MARKDUPS }                 from './modules/dedup_markdups.nf'
 include { HSMETRICS }                      from './modules/hsmetrics.nf'
 
+<<<<<<< HEAD
 include { POLYSOLVER_PREP }                from './modules/polysolver_prep.nf'
+=======
+>>>>>>> f12105e (Pipeline moved to vh83, dropped filtering flags for sort_index)
 include { POLYSOLVER }                     from './modules/polysolver.nf'
 
 include { VARDICT_SINGLE_RAW }             from './modules/vardict_single_raw.nf'
@@ -132,6 +135,7 @@ workflow {
     ch_ref_fai
   )
 
+<<<<<<< HEAD
   // ---------- HLA typing ----------
 def ch_bam_for_hla_in =
   ch_bam_meta
@@ -143,6 +147,18 @@ def ch_bam_for_hla_in =
 
 // def ch_bam_for_hla = POLYSOLVER_PREP( ch_bam_for_hla_in )
 POLYSOLVER( ch_bam_for_hla_in )
+=======
+   // ---------- HLA typing ----------
+  def ch_bam_for_hla_in =
+    ch_bam_meta
+      .map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) }
+      .combine( ch_ref_fai )                             // broadcast FAI to each sample
+      .map { sub, sample, bam, bai, fai ->              // ensure the 5th element is a *path*
+        tuple(sub, sample, bam, bai, file(fai))
+      }
+
+  POLYSOLVER( ch_bam_for_hla_in )
+>>>>>>> f12105e (Pipeline moved to vh83, dropped filtering flags for sort_index)
 
   // ---------- Pair tumour/normal by subject ----------
   def ch_pairs = ch_bam_meta

@@ -9,12 +9,20 @@ process SORT_INDEX {
   tuple val(subject), val(sample_id), path(sam)
 
   output:
+<<<<<<< HEAD
   tuple val(subject), val(sample_id), path("${sample_id}.hq.sorted.bam"), path("${sample_id}.hq.sorted.bam.bai"), emit: bam
+=======
+  tuple val(subject), val(sample_id),
+        path("${sample_id}.sorted.bam"),
+        path("${sample_id}.sorted.bam.bai"),
+        emit: bam
+>>>>>>> f12105e (Pipeline moved to vh83, dropped filtering flags for sort_index)
 
   script:
   """
   set -euo pipefail
 
+<<<<<<< HEAD
   # Filter to high-quality, properly paired, mapped primary reads, keep header,
   # stream uncompressed BAM to sorter for speed.
   samtools view -u -h \
@@ -30,5 +38,17 @@ process SORT_INDEX {
   # Sanity checks
   test -s "${sample_id}.hq.sorted.bam"
   test -s "${sample_id}.hq.sorted.bam.bai"
+=======
+  # Keep all reads, no filtering — stream uncompressed BAM to sorter
+  samtools view -u -h "${sam}" \
+  | samtools sort -@ ${task.cpus} -o "${sample_id}.sorted.bam" -
+
+  # Index the sorted BAM
+  samtools index -@ ${task.cpus} "${sample_id}.sorted.bam" "${sample_id}.sorted.bam.bai"
+
+  # Sanity checks
+  test -s "${sample_id}.sorted.bam"
+  test -s "${sample_id}.sorted.bam.bai"
+>>>>>>> f12105e (Pipeline moved to vh83, dropped filtering flags for sort_index)
   """
 }

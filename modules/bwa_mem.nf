@@ -35,3 +35,4 @@ process BWA_MEM {
   test -s "${sample_id}.sam"
   """
 }
+
