@@ -8,6 +8,7 @@ if( !params.containsKey('bed')          ) params.bed        = null
 if( !params.containsKey('outdir')       ) params.outdir     = "results"
 if( !params.containsKey('min_af')       ) params.min_af     = 0.05
 if( !params.containsKey('vardict_mode') ) params.vardict_mode = 'paired'  // 'paired' | 'single'
+if( !params.containsKey('multiqc_extra_args') ) params.multiqc_extra_args = ''
 
 // Optional tool params (silence warnings; processes may still use their own defaults)
 if( !params.containsKey('polysolver_race') )       params.polysolver_race       = 'Caucasian'
@@ -28,8 +29,14 @@ if( !params.bed )           exit 1, "ERROR: --bed regions BED is required"
 
 // -------------------- Includes --------------------
 include { FASTQC }                         from './modules/fastqc.nf'
-include { BWA_MEM }                        from './modules/bwa_mem.nf'
-include { SORT_INDEX }                     from './modules/sort_index.nf'
+
+// NEW: combined align + sort (no SAM on disk)
+include { ALIGN_AND_SORT }                 from './modules/align_and_sort.nf'
+
+// Removed: separate BWA_MEM and SORT_INDEX module includes
+// include { BWA_MEM }                      from './modules/bwa_mem.nf'
+// include { SORT_INDEX }                   from './modules/sort_index.nf'
+
 include { DEDUP_MARKDUPS }                 from './modules/dedup_markdups.nf'
 include { HSMETRICS }                      from './modules/hsmetrics.nf'
 
@@ -105,13 +112,15 @@ workflow {
   // ---------- QC ----------
   FASTQC( ch_reads )
 
-  // ---------- Align ----------
+  // ---------- Align + Sort (no SAM on disk) ----------
   ch_align_in = ch_reads
     .combine(ch_ref_fa)
     .combine(ch_ref_src_abs)
 
-  ch_sam        = BWA_MEM( ch_align_in )
-  ch_bam_sorted = SORT_INDEX( ch_sam )
+  // Emits (subject, sample_id, *.hq.sorted.bam, *.hq.sorted.bam.bai)
+  ch_bam_sorted = ALIGN_AND_SORT( ch_align_in )
+
+  // ---------- Dedup ----------
   (ch_bam, ch_dedup_metrics) = DEDUP_MARKDUPS( ch_bam_sorted )
 
   // ---------- Attach metadata (subject/status/sex) ----------
@@ -131,16 +140,13 @@ workflow {
     ch_ref_fai
   )
 
-   // ---------- HLA typing ----------
+  // ---------- HLA typing (POLYSOLVER) ----------
   def ch_bam_for_hla_in =
-    ch_bam_meta
-      .map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) }
-      .combine( ch_ref_fai )                             // broadcast FAI to each sample
-      .map { sub, sample, bam, bai, fai ->              // ensure the 5th element is a *path*
-        tuple(sub, sample, bam, bai, file(fai))
-      }
+  ch_bam_meta
+    .map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) }
 
   POLYSOLVER( ch_bam_for_hla_in )
+
 
   // ---------- Pair tumour/normal by subject ----------
   def ch_pairs = ch_bam_meta
