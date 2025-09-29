@@ -1,62 +1,28 @@
 nextflow.enable.dsl=2
 
-// -------------------- Params --------------------
-if( !params.containsKey('samplesheet') ) params.samplesheet = "./refs/samplesheet.csv"
-if( !params.containsKey('reference')    ) params.reference  = null
-if( !params.containsKey('reference_fai')) params.reference_fai = null
-if( !params.containsKey('bed')          ) params.bed        = null
-if( !params.containsKey('outdir')       ) params.outdir     = "results"
-if( !params.containsKey('min_af')       ) params.min_af     = 0.05
-if( !params.containsKey('vardict_mode') ) params.vardict_mode = 'paired'  // 'paired' | 'single'
-if( !params.containsKey('multiqc_extra_args') ) params.multiqc_extra_args = ''
-
-// Optional tool params (silence warnings; processes may still use their own defaults)
-if( !params.containsKey('polysolver_race') )       params.polysolver_race       = 'Caucasian'
-if( !params.containsKey('polysolver_build') )      params.polysolver_build      = 'hg38'
-if( !params.containsKey('polysolver_emit_vcf') )   params.polysolver_emit_vcf   = 0
-if( !params.containsKey('polysolver_fastqtype') )  params.polysolver_fastqtype  = 'STDFQ'
-if( !params.containsKey('polysolver_insertcalc') ) params.polysolver_insertcalc = 0
-
 // Absolute outdir (stable for publishDir closures)
 params.outdir_abs = params.outdir?.startsWith('/') \
   ? params.outdir \
   : "${projectDir}/${params.outdir}"
 
-// Hard exits for required inputs (prebuilt FASTA .fai and BWA index must exist)
-if( !params.reference )     exit 1, "ERROR: --reference FASTA is required (and must be pre-indexed for BWA)"
-if( !params.reference_fai ) exit 1, "ERROR: --reference_fai (FASTA .fai) is required"
-if( !params.bed )           exit 1, "ERROR: --bed regions BED is required"
-
 // -------------------- Includes --------------------
+include { INIT_PARAMS }                    from './modules/init_params.nf'
 include { FASTQC }                         from './modules/fastqc.nf'
-
-// NEW: combined align + sort (no SAM on disk)
 include { ALIGN_AND_SORT }                 from './modules/align_and_sort.nf'
-
-// Removed: separate BWA_MEM and SORT_INDEX module includes
-// include { BWA_MEM }                      from './modules/bwa_mem.nf'
-// include { SORT_INDEX }                   from './modules/sort_index.nf'
-
 include { DEDUP_MARKDUPS }                 from './modules/dedup_markdups.nf'
 include { HSMETRICS }                      from './modules/hsmetrics.nf'
-
 include { POLYSOLVER }                     from './modules/polysolver.nf'
-
 include { VARDICT_SINGLE_RAW }             from './modules/vardict_single_raw.nf'
 include { VARDICT_PAIRED_RAW }             from './modules/vardict_paired_raw.nf'
 include { VARDICT_TO_VCF }                 from './modules/vardict_to_vcf.nf'
-
 include { CNVKIT_REF }                     from './modules/cnvkit_ref.nf'
 include { CNVKIT_AMPLICON }                from './modules/cnvkit_amplicon.nf'
 include { CNVKIT_GENES }                   from './modules/cnvkit_genes.nf'
-
 include { MSIPRO_SCAN }                    from './modules/msipro_scan.nf'
 include { MSIPRO_MSI }                     from './modules/msipro_msi.nf'
-
 include { VEP_ANNOTATE }                   from './modules/vep_annotate.nf'
 include { SNPEFF_ANNOTATE }                from './modules/snpeff_annotate.nf'
 include { CLINVAR_ANNOTATE }               from './modules/clinvar_annotate.nf'
-
 include { SOMATIC_FILTER }                 from './modules/somatic_filter.nf'
 include { PYTMB }                          from './modules/pytmb.nf'
 include { MULTIQC }                        from './modules/multiqc.nf'
@@ -108,6 +74,9 @@ Channel
 
 // -------------------- Workflow --------------------
 workflow {
+
+  // ---- Param check ---------
+  INIT_PARAMS()
 
   // ---------- QC ----------
   FASTQC( ch_reads )

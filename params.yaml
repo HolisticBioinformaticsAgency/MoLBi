@@ -2,7 +2,7 @@
 samplesheet: "./refs/samplesheet.csv"
 
 # Core references (must ALREADY exist in ./refs/)
-reference: "./refs/Homo_sapiens_assembly38.fasta"        # FASTA
+reference: "./refs/Homo_sapiens_assembly38.fasta"         # FASTA
 reference_fai: "./refs/Homo_sapiens_assembly38.fasta.fai" # FASTA index (.fai) — must match the FASTA
 
 # NOTE: BWA index files are expected in the same folder with the SAME basename:
@@ -49,3 +49,10 @@ pytmb_min_alt: 2
 pytmb_filter_syn: true
 pytmb_filter_nc: true
 pytmb_filter_lq: true
+
+# Polysolver params (to silence warnings)
+polysolver_race: "Caucasian"
+polysolver_build: "hg38"
+polysolver_emit_vcf: 0
+polysolver_fastqtype: "STDFQ"
+polysolver_insertcalc: 0

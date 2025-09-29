@@ -5,6 +5,6 @@
 !.gitignore
 !main.nf
 !nextflow.config
-!full_params.yaml
+!params.yaml
 !modules
 !modules/**
