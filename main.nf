@@ -99,15 +99,17 @@ workflow {
     .map  { sample, left, subject, status, sex ->
       tuple(subject, sample, status, sex, left[1], left[2])
     }
-  // -> (subject, sample, status, sex, bam, bai)
 
   // ---------- HsMetrics ----------
-  HSMETRICS(
-    ch_bam_meta.map { sub, sample, status, sex, bam, bai -> tuple(sub, sample, bam, bai) },
-    ch_bed,
-    ch_ref_fa,
-    ch_ref_fai
-  )
+  def ch_hs_in = ch_bam
+    .combine(ch_bed)
+    .combine(ch_ref_fa)
+    .combine(ch_ref_fai)
+    .map { sub, sample, bam, bai, bed, ref_fa, ref_fai ->
+      tuple(sub, sample, bam, bai, bed, ref_fa, ref_fai)
+    }
+
+  HSMETRICS( ch_hs_in )
 
   // ---------- HLA typing (POLYSOLVER) ----------
   def ch_bam_for_hla_in =

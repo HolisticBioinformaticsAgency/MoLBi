@@ -14,9 +14,11 @@ process CNVKIT_GENES {
   script:
   """
   set -euo pipefail
-  cnvkit.py genemetrics \
-    ${cnr} \
-    -s ${cns} \
+  cnvkit.py genemetrics \\
+    ${cnr} \\
+    -s ${cns} \\
+    -t ${params.cnvkit_genemetrics_threshold} \\
+    -m ${params.cnvkit_genemetrics_min_probes} \\
     -o ${sample_id}_gene_cn.txt
   """
 }

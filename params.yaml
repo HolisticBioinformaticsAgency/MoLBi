@@ -21,6 +21,10 @@ outdir: "result"
 vardict_mode: "paired"
 min_af: 0.05
 
+# CNVkit genemetrics
+cnvkit_genemetrics_threshold: 0.4
+cnvkit_genemetrics_min_probes: 1  # Something to do with targeted WES?
+
 # VEP (container bind to /vep_cache in your profile)
 vep_species: "homo_sapiens"
 vep_assembly: "GRCh38"
@@ -56,3 +60,6 @@ polysolver_build: "hg38"
 polysolver_emit_vcf: 0
 polysolver_fastqtype: "STDFQ"
 polysolver_insertcalc: 0
+
+# MultiQC
+multiqc_extra_args: ""
