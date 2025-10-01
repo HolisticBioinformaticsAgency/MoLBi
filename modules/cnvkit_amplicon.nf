@@ -13,7 +13,7 @@ process CNVKIT_AMPLICON {
         val(sample_id),
         path("${sample_id}.cnr"),
         path("${sample_id}.cns"),
-        path("${sample_id}.cnv.vcf"),
+        path("${sample_id}_cnv.vcf"),
         emit: cnv
 
   script:
@@ -33,6 +33,6 @@ process CNVKIT_AMPLICON {
   mv "\$CNS" ${sample_id}.cns
 
   # Export CNV calls as VCF (may be empty in some panels)
-  cnvkit.py export vcf ${sample_id}.cns -f ${ref_fa} -o ${sample_id}.cnv.vcf || touch ${sample_id}.cnv.vcf
+  cnvkit.py export vcf ${sample_id}.cns -f ${ref_fa} -o ${sample_id}_cnv.vcf || touch ${sample_id}_cnv.vcf
   """
 }

@@ -5,47 +5,36 @@ process CLINVAR_ANNOTATE {
   publishDir { "${params.outdir_abs}/${subject}/snpeff" }, mode: 'copy'
 
   input:
-  tuple val(subject), val(id), path(snpeff_core_vcf), path(clinvar_vcf)
+  tuple val(subject), val(id), path(mane_vcf), path(clinvar_vcf)
 
   output:
-  tuple val(subject), val(id), path("${id}_snpeff.vcf"), emit: snpeffvcf
+  tuple val(subject), val(id), path("${id}_MANE_*.vcf.gz"), emit: snpeffvcf
 
   script:
   """
   set -euo pipefail
 
-  # --- sanity: SnpSift present
-  if ! command -v SnpSift >/dev/null 2>&1 ; then
-    echo "[CLINVAR_ANNOTATE] ERROR: SnpSift not found in PATH inside container." >&2
-    exit 127
-  fi
+  clin_stem=\$(basename "${clinvar_vcf}")
+  clin_stem="\${clin_stem%.gz}"
+  clin_stem="\${clin_stem%.vcf}"
 
-  # --- sanity: ClinVar file looks like a gzip
-  if ! gzip -t "${clinvar_vcf}" 2>/dev/null ; then
-    echo "[CLINVAR_ANNOTATE] ERROR: ClinVar DB '${clinvar_vcf}' is not a valid .vcf.gz (gzip test failed)." >&2
-    exit 2
-  fi
+  OUT_PREFIX="${id}_MANE_\${clin_stem}"
+  OUT_VCF="\${OUT_PREFIX}.vcf"
+  OUT_GZ="\${OUT_VCF}.gz"
 
-  # Try fast path first: use tabix mode on the gz+tabix pair
+  # Try fast path first
   set +e
-  SnpSift annotate -tabix "${clinvar_vcf}" "${snpeff_core_vcf}" > "${id}_snpeff.vcf"
+  SnpSift annotate -tabix "${clinvar_vcf}" "${mane_vcf}" > "\${OUT_VCF}"
   rc=\$?
   set -e
 
   if [[ \$rc -ne 0 ]]; then
-    echo "[CLINVAR_ANNOTATE] WARN: -tabix annotate failed (rc=\$rc). Falling back to uncompressed DB..." >&2
-
-    # Fallback: uncompress ClinVar to plain VCF and annotate from that
+    echo "[CLINVAR_ANNOTATE] WARN: -tabix annotate failed. Falling back..." >&2
     gunzip -c "${clinvar_vcf}" > "${id}_clinvar_db.vcf"
-
-    # Quick header sanity (should start with '##')
-    if ! head -n1 "${id}_clinvar_db.vcf" | grep -q '##' ; then
-      echo "[CLINVAR_ANNOTATE] ERROR: Uncompressed ClinVar VCF header looks invalid." >&2
-      exit 3
-    fi
-
-    # If ClinVar is sorted (it usually is), hint SnpSift for speed:
-    SnpSift annotate -sorted "${id}_clinvar_db.vcf" "${snpeff_core_vcf}" > "${id}_snpeff.vcf"
+    SnpSift annotate -sorted "${id}_clinvar_db.vcf" "${mane_vcf}" > "\${OUT_VCF}"
   fi
+
+  # Compress the final VCF
+  gzip -f "\${OUT_VCF}"
   """
 }

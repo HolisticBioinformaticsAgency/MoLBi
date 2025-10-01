@@ -188,12 +188,12 @@ workflow {
   def ch_mane_dir    = Channel.of( file(params.mane_dir) )
   def ch_clinvar_vcf = Channel.of( file(params.clinvar_vcf) )
 
-  def ch_snpeff_core = SNPEFF_ANNOTATE(
+  def ch_mane_annot = SNPEFF_ANNOTATE(
     ch_variants_vcf.combine(ch_mane_dir)
                    .map { sub, sid, vcf, mane -> tuple(sub, sid, vcf, mane) }
   )
   def ch_snpeff = CLINVAR_ANNOTATE(
-    ch_snpeff_core.combine(ch_clinvar_vcf)
+    ch_mane_annot.combine(ch_clinvar_vcf)
                   .map { sub, sid, core_vcf, clin -> tuple(sub, sid, core_vcf, clin) }
   )
 
@@ -201,11 +201,11 @@ workflow {
                  (params.pytmb_annot == 'vep')    ? ch_vep    :
                                                     ch_vep
 
-  def ch_somatic = SOMATIC_FILTER( ch_annot )
+  def ch_somatic_filtered_vcf = SOMATIC_FILTER( ch_annot )
 
   // ----------- TMB -----------------
   PYTMB(
-    ch_somatic.map { sub, sid, vcf -> tuple(sub, sid, file(vcf)) },
+    ch_somatic_filtered_vcf.map { sub, sid, vcf -> tuple(sub, sid, file(vcf)) },
     file(params.pytmb_db_config),
     file(params.pytmb_var_config)
   )
@@ -215,3 +215,30 @@ workflow {
   def ch_multiqc_inputs  = ch_dedup_metrics.mix(ch_hsmetrics_files).collect()
   MULTIQC( ch_multiqc_inputs )
 }
+
+workflow.onComplete {
+    def outdir = params.outdir_abs ?: "${projectDir}/results"
+    def cmd = """
+      set -euo pipefail
+      shopt -s nullglob
+
+      for d in "${outdir}"/* ; do
+        [ -d "\$d" ] || continue
+        dest="\${d%/}/vcf"
+        mkdir -p "\$dest"
+
+        # Copy VCFs and indexes from immediate subdirs, but skip the vcf/ folder itself
+        find "\$d" -maxdepth 2 -type f \\
+          \\( -name "*.vcf.gz" -o -name "*.vcf.tbi" -o -name "*.vcf.gz.tbi" -o -name "*.csi" \\) \\
+          -not -path "\$dest/*" \\
+          -exec cp -f {} "\$dest/" \\;
+      done
+    """
+    def p = ["bash","-lc", cmd].execute()
+    p.consumeProcessOutput(System.out, System.err)
+    def rc = p.waitFor()
+    if( rc != 0 ) log.warn "VCF gather post-step exited with code ${rc}"
+}
+
+
+

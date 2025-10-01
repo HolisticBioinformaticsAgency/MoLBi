@@ -29,6 +29,7 @@ cnvkit_genemetrics_min_probes: 1  # Something to do with targeted WES?
 vep_species: "homo_sapiens"
 vep_assembly: "GRCh38"
 vep_cache_dir: "/vep_cache"
+vep_version: "115"
 
 # SnpEff (container bind to /snpeff_data in your profile)
 # Absolute host path where you put MANE + ClinVar
