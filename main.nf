@@ -16,7 +16,7 @@ include { VARDICT_SINGLE_RAW }             from './modules/vardict_single_raw.nf
 include { VARDICT_PAIRED_RAW }             from './modules/vardict_paired_raw.nf'
 include { VARDICT_TO_VCF }                 from './modules/vardict_to_vcf.nf'
 include { CNVKIT_REF }                     from './modules/cnvkit_ref.nf'
-include { CNVKIT_AMPLICON }                from './modules/cnvkit_amplicon.nf'
+include { CNVKIT_BATCH }                   from './modules/cnvkit_batch.nf'
 include { CNVKIT_GENES }                   from './modules/cnvkit_genes.nf'
 include { MSIPRO_SCAN }                    from './modules/msipro_scan.nf'
 include { MSIPRO_MSI }                     from './modules/msipro_msi.nf'
@@ -160,16 +160,24 @@ workflow {
   }
   def ch_variants_vcf = VARDICT_TO_VCF( ch_vcf_in )
 
-  // ---------- CNVkit ----------
+  // ---------- CNVkit (Tumor–Normal) ----------
   (ch_cnvref_cnn, ch_cnvref_fa) = CNVKIT_REF( ch_ref_fa, ch_bed )
-  def ch_cnvkit_in = ch_bam_meta
+
+  def ch_cnvkit_tn_in = ch_pairs
     .combine(ch_cnvref_fa)
     .combine(ch_cnvref_cnn)
-    .map { sub, sample, status, sex, bam, bai, ref_fa, cnn ->
-      tuple(sub, sample, bam, bai, ref_fa, cnn)
+    .map { sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, ref_fa, cnn ->
+      // (subject, tumor_id, t_bam, t_bai, normal_id, n_bam, n_bai, ref_fa, refcnn)
+      tuple(sub, t_sample, t_bam, t_bai, n_sample, n_bam, n_bai, ref_fa, cnn)
     }
-  def ch_cnvkit = CNVKIT_AMPLICON( ch_cnvkit_in )
-  CNVKIT_GENES( ch_cnvkit.map { sub, sample, cnr, cns, vcf -> tuple(sub, sample, cnr, cns) } )
+
+  def ch_cnv, ch_scatter, ch_diagram
+  (ch_cnv, ch_scatter, ch_diagram) = CNVKIT_BATCH( ch_cnvkit_tn_in )
+
+  // CNVKIT_GENES expects: (sub, sample, cnr, cns)
+  CNVKIT_GENES(
+    ch_cnv.map { sub, sample, cnr, cns -> tuple(sub, sample, cnr, cns) }
+  )
 
   // ---------- MSI ----------
   (ch_msisites, ch_msiref_fa) = MSIPRO_SCAN( ch_ref_fa )
