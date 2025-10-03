@@ -12,7 +12,7 @@ reference_fai: "./refs/Homo_sapiens_assembly38.fasta.fai" # FASTA index (.fai) â
 #   ./refs/Homo_sapiens_assembly38.fasta.pac
 #   ./refs/Homo_sapiens_assembly38.fasta.sa
 
-bed: "./refs/S33266436_Padded.hg38matched.bed"
+bed: "./refs/S33266436_Padded_namefixed_filtered.bed"
 
 # Outputs
 outdir: "result"
@@ -35,7 +35,7 @@ vep_version: "115"
 # Absolute host path where you put MANE + ClinVar
 refs_dir: "/fs04/scratch2/cg90/liem/projects/nextflow/molbi_pipeline/refs"
 mane_dir: "/fs04/scratch2/cg90/liem/projects/nextflow/molbi_pipeline/refs/GRCh38.mane.1.2.refseq"
-clinvar_vcf: "/fs04/scratch2/cg90/liem/projects/nextflow/molbi_pipeline/refs/clinvar_20250601.vcf.gz"
+clinvar_vcf: "/fs04/scratch2/vh83/liem/projects/molbi_pipeline/refs/clinvar_20250928.vcf.gz"
 
 # optional
 clinvar_info: "CLNSIG,CLNREVSTAT,CLNDN,CLNVC,ALLELEID,CLNVCSO,RS"

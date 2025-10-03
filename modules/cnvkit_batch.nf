@@ -45,7 +45,7 @@ process CNVKIT_BATCH {
   mv "\$CNS" ${tumor_id}.cns
 
   # Make plots from CNR/CNS (don’t fail pipeline if plotting hiccups)
-  cnvkit.py scatter ${tumor_id}.cnr -s ${tumor_id}.cns -o ${tumor_id}-scatter.pdf  || true
+  cnvkit.py scatter ${tumor_id}.cnr -s ${tumor_id}.cns --segment-color none -g '' -o ${tumor_id}-scatter.pdf
   cnvkit.py diagram ${tumor_id}.cnr -s ${tumor_id}.cns -o ${tumor_id}-diagram.pdf || true
   """
 }
