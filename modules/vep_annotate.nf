@@ -2,15 +2,16 @@ process VEP_ANNOTATE {
   tag "${subject}:${id}"
   container 'quay.io/biocontainers/ensembl-vep:115--pl5321h2a3209d_0'
 
-  publishDir { "${params.outdir_abs}/${subject}/vep" }, mode: 'copy'
+  // publish per case
+  publishDir { "${pub_base}/vep" }, mode: 'copy'
 
   input:
-  // (subject, id, vcf, ref_fa)
-  tuple val(subject), val(id), path(vcf), path(ref_fa)
+  // (pub_base, subject, id, vcf, ref_fa)
+  tuple val(pub_base), val(subject), val(id), path(vcf), path(ref_fa)
 
   output:
-  tuple val(subject), val(id), path("${id}_VEP_${params.vep_species}_${params.vep_assembly}_v${params.vep_version}.vcf.gz"), emit: vepvcf
-  tuple val(subject), val(id), path("${id}_VEP_${params.vep_species}_${params.vep_assembly}_v${params.vep_version}_stats.txt"), emit: stats
+  tuple val(pub_base), val(subject), val(id), path("${id}_VEP_${params.vep_species}_${params.vep_assembly}_v${params.vep_version}.vcf.gz"), emit: vepvcf
+  tuple val(pub_base), val(subject), val(id), path("${id}_VEP_${params.vep_species}_${params.vep_assembly}_v${params.vep_version}_stats.txt"), emit: stats
 
   script:
   """

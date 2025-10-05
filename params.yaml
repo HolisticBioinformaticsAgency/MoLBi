@@ -1,5 +1,5 @@
 # Inputs (samplesheet-driven)
-samplesheet: "./refs/samplesheet.csv"
+samplesheet: "./refs/samplesheet_test.csv"
 
 # Core references (must ALREADY exist in ./refs/)
 reference: "./refs/Homo_sapiens_assembly38.fasta"         # FASTA
@@ -15,10 +15,9 @@ reference_fai: "./refs/Homo_sapiens_assembly38.fasta.fai" # FASTA index (.fai) â
 bed: "./refs/S33266436_Padded_namefixed_filtered.bed"
 
 # Outputs
-outdir: "result"
+outdir: "result_test"
 
-# Calling / annotation
-vardict_mode: "paired"
+# VarDict Calling  
 min_af: 0.05
 
 # CNVkit genemetrics

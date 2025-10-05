@@ -1,16 +1,16 @@
 process PYTMB {
-  tag "${subject}:${sample_id}"
+  tag "${subject}:${case_id}"
 
   container 'quay.io/biocontainers/tmb:1.5.0--pyhdfd78af_1'
-  publishDir "${params.outdir_abs}/${subject}/tmb", mode: 'copy'
+  publishDir { "${pub_base}/tmb" }, mode: 'copy'
 
   input:
-    tuple val(subject), val(sample_id), path(vcf)
+    tuple val(pub_base), val(subject), val(case_id), val(tumor_label), path(vcf)
     path db_config
     path var_config
 
   output:
-    tuple val(subject), val(sample_id), path("${sample_id}_pytmb.tsv"), emit: tmb
+    tuple val(pub_base), val(subject), val(case_id), path("${case_id}_pytmb.tsv"), emit: tmb
 
   script:
   """
@@ -19,11 +19,10 @@ process PYTMB {
   cp ${db_config} db.yml
   cp ${var_config} var.yml
 
-  # Always use tumour column (with "_T") for pyTMB
   pyTMB.py \
     -i ${vcf} \
     --effGenomeSize ${params.pytmb_eff_size} \
-    --sample ${sample_id}_T \
+    --sample "${tumor_label}" \
     --dbConfig db.yml \
     --varConfig var.yml \
     --vaf ${params.pytmb_vaf} \
@@ -32,6 +31,6 @@ process PYTMB {
     ${params.pytmb_filter_syn ? "--filterSyn" : ""} \
     ${params.pytmb_filter_nc  ? "--filterNonCoding" : ""} \
     ${params.pytmb_filter_lq  ? "--filterLowQual" : ""} \
-    > ${sample_id}_pytmb.tsv
+    > ${case_id}_pytmb.tsv
   """
 }
