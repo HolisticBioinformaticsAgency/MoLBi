@@ -32,8 +32,8 @@ vep_version: "115"
 
 # SnpEff (container bind to /snpeff_data in your profile)
 # Absolute host path where you put MANE + ClinVar
-refs_dir: "/fs04/scratch2/cg90/liem/projects/nextflow/molbi_pipeline/refs"
-mane_dir: "/fs04/scratch2/cg90/liem/projects/nextflow/molbi_pipeline/refs/GRCh38.mane.1.2.refseq"
+refs_dir: "/fs04/scratch2/vh83/liem/projects/molbi_pipeline/refs/"
+mane_dir: "/fs04/scratch2/vh83/liem/projects/molbi_pipeline/refs/GRCh38.mane.1.2.refseq"
 clinvar_vcf: "/fs04/scratch2/vh83/liem/projects/molbi_pipeline/refs/clinvar_20250928.vcf.gz"
 
 # optional
