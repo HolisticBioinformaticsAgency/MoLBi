@@ -105,50 +105,42 @@ workflow {
     .map { sub, sample, bam, bai, bed, ref_fa, ref_fai -> tuple(sub, sample, bam, bai, bed, ref_fa, ref_fai) }
   HSMETRICS( ch_hs_in )
 
-  // ---------- Build per-subject groups ----------
+ // ---------- Build per-subject groups (deterministic) ----------
   def by_subject = ch_bam_meta
     .map { sub, sample, status, sex, bam, bai -> tuple(sub, tuple(sample, status, bam, bai)) }
     .groupTuple()
+    .map { sub, recs -> tuple(sub, recs.sort { a, b -> a[0] <=> b[0] }) } // stable order
 
-  // ---------- Compute cases ----------
-  def ch_cases = by_subject.flatMap { sub, recs ->
-    def tumors  = recs.findAll { it[1] == 'tumor'  }
-                   .collect { [ it[0], it[2], it[3], 'tumor'  ] }
-    def normals = recs.findAll { it[1] == 'normal' }
-                   .collect { [ it[0], it[2], it[3], 'normal' ] }
+  // ---------- Compute cases and publishing base in one pass ----------
+  def ch_cases_pub = by_subject.flatMap { sub, recs ->
+    // rec: [sample, status, bam, bai]
+    def tumors  = recs.findAll { it[1] == 'tumor'  }.collect { [ it[0], it[2], it[3], 'tumor'  ] } // [id,bam,bai,status]
+    def normals = recs.findAll { it[1] == 'normal' }.collect { [ it[0], it[2], it[3], 'normal' ] }
+
+    // number of cases for this subject
+    def ncases = (tumors && normals) ? (tumors.size() * normals.size()) : recs.size()
 
     def out = []
     if( tumors && normals ) {
       tumors.each { t ->
         normals.each { n ->
           def case_id = "${t[0]}_${n[0]}"
-          def samples = [ t, n ]
-          out << tuple(sub, case_id, 'paired', samples)
+          def base    = (ncases > 1) ? "${params.outdir_abs}/${sub}/${case_id}"
+                                    : "${params.outdir_abs}/${sub}"
+          out << tuple(sub, case_id, 'paired', [t, n], base)
         }
       }
     } else {
       recs.each { r ->
-        def sample_id = r[0]; def bam = r[2]; def bai = r[3]; def status = r[1]
-        def samples = [ [ sample_id, bam, bai, status ] ]
-        out << tuple(sub, sample_id, 'single', samples)
+        def case_id = r[0]
+        def base    = (ncases > 1) ? "${params.outdir_abs}/${sub}/${case_id}"
+                                  : "${params.outdir_abs}/${sub}"
+        out << tuple(sub, case_id, 'single', [ [ r[0], r[2], r[3], r[1] ] ], base)
       }
     }
     out
   }
-
-  // ---------- Decide publishing base ----------
-  def ch_case_counts = ch_cases
-    .map { sub, case_id, mode, samples -> tuple(sub, 1) }
-    .groupTuple()
-    .map { sub, ones -> tuple(sub, ones.size()) }
-
-  def ch_cases_pub = ch_cases
-    .join(ch_case_counts)
-    .map { sub, case_id, mode, samples, ncases ->
-      def base = (ncases > 1) ? "${params.outdir_abs}/${sub}/${case_id}" : "${params.outdir_abs}/${sub}"
-      tuple(sub, case_id, mode, samples, base)
-    }
-
+  
   // ---------- POLYSOLVER ----------
   POLYSOLVER(
     ch_cases_pub.flatMap { sub, case_id, mode, samples, pub_base ->
