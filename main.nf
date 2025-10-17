@@ -25,6 +25,7 @@ include { MSIPRO_SCAN }                    from './modules/msipro_scan.nf'
 include { MSIPRO_PAIRED ; MSIPRO_SINGLE }  from './modules/msipro.nf'
 
 include { VEP_ANNOTATE }                   from './modules/vep_annotate.nf'
+include { VEP_ANNOTATE }                   from './modules/vep_annotate_peptide.nf'
 include { SNPEFF_ANNOTATE }                from './modules/snpeff_annotate.nf'
 include { CLINVAR_ANNOTATE }               from './modules/clinvar_annotate.nf'
 include { SOMATIC_FILTER }                 from './modules/somatic_filter.nf'
@@ -292,6 +293,12 @@ workflow {
     .map    { pub, sub, id, mode, vcf, hasTumor -> tuple(pub, sub, id, mode, vcf) }
 
   def ch_somatic_filtered_vcf = SOMATIC_FILTER( ch_for_tumor )
+
+  def ch_vep_peptide_in = ch_somatic_filtered_vcf.join(ch_ref_fa)
+    .map { pub, sub, id, vcf, ref -> tuple(pub, sub, id, vcf, ref)
+    }
+
+  VEP_ANNOTATE_PEPTIDE(ch_vep_peptide_in)
 
   def ch_cases_keyed = ch_cases_pub.map { sub, case_id, mode, samples, pub_base ->
     tuple("${sub}::${case_id}", sub, case_id, mode, samples, pub_base)
