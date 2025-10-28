@@ -1,4 +1,4 @@
-process VEP_ANNOTATE {
+process VEP_ANNOTATE_PEPTIDE {
   tag "${subject}:${id}"
   container 'quay.io/biocontainers/ensembl-vep:115--pl5321h2a3209d_0'
 
@@ -33,7 +33,7 @@ process VEP_ANNOTATE {
     --canonical --biotype --protein --ccds --domains --uniprot \\
     --af --af_gnomad --max_af --variant_class \\
     --pick \\
-    --plugin ProteinSeqs,${id}.ref.fa,${id}.mut.fa"
+    --plugin ProteinSeqs,${id}.ref.fa,${id}.mut.fa" \\
     --input_file ${vcf} \\
     --output_file \${OUT_VCF} \\
     --stats_text --stats_file \${OUT_STATS}
