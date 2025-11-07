@@ -19,7 +19,7 @@ process POLYSOLVER {
   tuple val(pub_base), val(subject), val(case_id), val(sample_id), path("${sample_id}_hla.txt"), emit: hla
 
   script:
-  def RACE       = params.polysolver_race       ?: 'Caucasian'
+  def RACE       = params.polysolver_race       ?: 'Unknown'
   def BUILD      = params.polysolver_build      ?: 'hg38'
   def EMITVCF    = params.polysolver_emit_vcf   ?: 0
   def FQTYPE     = params.polysolver_fastqtype  ?: 'STDFQ'

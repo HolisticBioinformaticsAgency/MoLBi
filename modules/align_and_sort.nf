@@ -4,16 +4,14 @@ process ALIGN_AND_SORT {
       'https://community-cr-prod.seqera.io/docker/registry/v2/blobs/sha256/d7/d7e24dc1e4d93ca4d3a76a78d4c834a7be3985b0e1e56fddd61662e047863a8a/data' :
       'community.wave.seqera.io/library/bwa_htslib_samtools:83b50ff84ead50d0' }"
 
-  publishDir { "${params.outdir_abs}/${subject}/bam" }, mode: 'copy'
-
   input:
   // (subject, sample_id, [R1,R2], staged FASTA, ABSOLUTE original FASTA path string)
   tuple val(subject), val(sample_id), path(reads), path(ref_fa), val(ref_src_abs)
 
   output:
   tuple val(subject), val(sample_id),
-        path("${sample_id}.hq.sorted.bam"),
-        path("${sample_id}.hq.sorted.bam.bai"),
+        path("${sample_id}_sorted.bam"),
+        path("${sample_id}_sorted.bam.bai"),
         emit: bam
 
   script:
@@ -35,12 +33,12 @@ process ALIGN_AND_SORT {
 
   bwa mem -M -t ${task.cpus} -R "\$RG" ${ref_fa} ${reads.join(' ')} \\
     | samtools view -u -h - \\
-    | samtools sort -@ ${task.cpus} -o "${sample_id}.hq.sorted.bam"
+    | samtools sort -@ ${task.cpus} -o "${sample_id}_sorted.bam"
 
-  samtools index -@ ${task.cpus} "${sample_id}.hq.sorted.bam" "${sample_id}.hq.sorted.bam.bai"
+  samtools index -@ ${task.cpus} "${sample_id}_sorted.bam" "${sample_id}_sorted.bam.bai"
 
   # Sanity checks
-  test -s "${sample_id}.hq.sorted.bam"
-  test -s "${sample_id}.hq.sorted.bam.bai"
+  test -s "${sample_id}_sorted.bam"
+  test -s "${sample_id}_sorted.bam.bai"
   """
 }
