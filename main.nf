@@ -4,7 +4,7 @@ nextflow.enable.dsl=2
 // Absolute outdir (stable for publishDir closures)
 params.outdir_abs = params.outdir?.startsWith('/') \
   ? params.outdir \
-  : "${projectDir}/${params.outdir ?: 'results'}"
+  : "${launchDir}/${params.outdir ?: 'results'}"
 
 // -------------------- Includes --------------------
 include { INIT_PARAMS }                    from './modules/init_params.nf'
