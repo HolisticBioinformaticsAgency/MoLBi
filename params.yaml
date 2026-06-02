@@ -22,6 +22,7 @@ min_af: 0.05
 # -------------------- CNVkit --------------------
 cnvkit_genemetrics_threshold: 0.4
 cnvkit_genemetrics_min_probes: 1
+cnvkit_pon: "/fs04/vh83/pipeline_reference/panels/CNVkit_ref/SureSelectXTHS2_V8_hg38_MOLBI_normals.cnn"
 
 # -------------------- VEP --------------------
 # These params kinda have to fit what's inside the vep_cache_dir I think, as VEP the tool looks for: <dir_cache>/<species>/<version>_<assembly>
