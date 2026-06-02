@@ -32,26 +32,16 @@ process CNVKIT_BATCH {
   """
   set -euo pipefail
 
-  if [ "${mode}" = "paired" ]; then
-    # Build reference on-the-fly from matched normal (no -r)
-    cnvkit.py batch case.bam \\
-      --normal control.bam \\
-      --targets ${bed} \\
-      --fasta ${ref_fa} \\
-      -p ${task.cpus} \\
-      -d .
-  else
-    # Single-sample: use prebuilt CNN (no --fasta/--targets)
-    cnvkit.py batch case.bam \\
-      -r ${refcnn} \\
-      -p ${task.cpus} \\
-      -d .
-  fi
+  # Always use the PoN reference regardless of paired/single
+  cnvkit.py batch case.bam \\
+    --method hybrid \\
+    --reference ${params.cnvkit_pon} \\
+    --segment-method haar \\
+    -p ${task.cpus} \\
+    -d .
 
-  CNR=\$(ls *.cnr | head -n1)
-  CNS=\$(ls *.cns | head -n1)
-  mv "\$CNR" ${case_id}.cnr
-  mv "\$CNS" ${case_id}.cns
+  mv case.cnr ${case_id}.cnr
+  mv case.cns ${case_id}.cns
 
   cnvkit.py scatter ${case_id}.cnr -s ${case_id}.cns --segment-color none -g '' -o ${case_id}-scatter.pdf || true
   cnvkit.py diagram ${case_id}.cnr -s ${case_id}.cns -o ${case_id}-diagram.pdf || true

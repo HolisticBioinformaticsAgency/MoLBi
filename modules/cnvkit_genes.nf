@@ -3,11 +3,9 @@ process CNVKIT_GENES {
   container 'quay.io/biocontainers/cnvkit:0.9.12--pyhdfd78af_1'
   env = [ 'MPLCONFIGDIR': '/tmp' ]
 
-  // publish under the case directory
   publishDir { "${pub_base}/cnvkit" }, mode: 'copy'
 
   input:
-  // (pub_base, subject, case_id, cnr, cns)
   tuple val(pub_base), val(subject), val(case_id), path(cnr), path(cns)
 
   output:
@@ -16,11 +14,10 @@ process CNVKIT_GENES {
   script:
   """
   set -euo pipefail
-  cnvkit.py genemetrics \
-    ${cnr} \
-    -s ${cns} \
-    -t ${params.cnvkit_genemetrics_threshold} \
-    -m ${params.cnvkit_genemetrics_min_probes} \
+  cnvkit.py genemetrics \\
+    ${cnr} \\
+    -t ${params.cnvkit_genemetrics_threshold} \\
+    -m ${params.cnvkit_genemetrics_min_probes} \\
     -o ${case_id}_gene_cn.txt
   """
 }

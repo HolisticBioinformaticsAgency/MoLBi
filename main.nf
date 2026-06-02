@@ -366,4 +366,3 @@ workflow {
   def ch_multiqc_inputs  = ch_dedup_metrics.mix(ch_hsmetrics_files).collect()
   MULTIQC( ch_multiqc_inputs )
 }
-
