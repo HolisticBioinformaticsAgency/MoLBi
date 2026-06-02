@@ -17,5 +17,5 @@ workflow INIT_PARAMS {
   if( !params.containsKey('polysolver_fastqtype')  ) params.polysolver_fastqtype  = 'STDFQ'
   if( !params.containsKey('polysolver_insertcalc') ) params.polysolver_insertcalc = 0
 
-  params.outdir_abs = params.outdir?.startsWith('/') ? params.outdir : "${projectDir}/${params.outdir}"
+  params.outdir_abs = params.outdir?.startsWith('/') ? params.outdir : "${launchDir}/${params.outdir}"
 }
